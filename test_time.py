@@ -456,7 +456,7 @@ if __name__ == '__main__':
     # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     print(tf.test.is_gpu_available())
     import numpy as np
-    # model = tensorflow.keras.applications.efficientnet.EfficientNetB7(input_shape=(224,224,3),weights=None)
+    # model = tensorflow.keras.applications.efficientnet.EfficientNetB7(input_shape=(224,224,3),weights=None,include_top=False)
     base_model = DenseNet201(include_top=False, weights='imagenet', input_shape=(224, 224, 3))
     # base_model = tensorflow.keras.applications.resnet.ResNet152(include_top=False, weights='imagenet',input_shape=(224, 224, 3))
     # base_model = tensorflow.keras.applications.resnet.ResNet50(include_top=False, weights='imagenet',input_shape=(224, 224, 3))
