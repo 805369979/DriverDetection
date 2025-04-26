@@ -22,11 +22,13 @@ import warnings
 from keras import backend as K
 import time
 
+import tensorflow.keras.layers
+
 import cbam
 
 import uuid
 # 用于避免卷积层同名报错
-from train_auc_model_new_cam import visualize_feature_map, make_gradcam_heatmap, save_and_display_gradcam
+from train_auc_model_new_cam import make_gradcam_heatmap, save_and_display_gradcam
 
 unique_random_number = uuid.uuid4()
 
@@ -34,7 +36,7 @@ class FerModel(object):
 
     def __init__(self):
         self.x_shape = (224, 224, 1)
-        self.epoch = 150
+        self.epoch = 100
         self.batchsize = 32
         self.weight_decay = 0.0005
         self.classes = 10
@@ -304,14 +306,12 @@ class FerModel(object):
 
         return output
 
-    def py_block(self, inputs, in_filters, out_filters, name):
+    def py_block(self, inputs, in_filters, out_filters,name):
         # 生成金字塔卷积模块
 
         weight_decay = 0.0005
 
-        x = Conv2D(in_filters, 1, kernel_initializer='uniform', padding='same',
-                   kernel_regularizer=regularizers.l2(self.weight_decay), name=str(uuid.uuid4()), activation='relu')(
-            inputs)
+        x = Conv2D(in_filters, 1,kernel_initializer='uniform', padding='same', kernel_regularizer=regularizers.l2(self.weight_decay), name=str(uuid.uuid4()), activation='relu')(inputs)
 
         x = BatchNormalization()(x)
 
@@ -323,8 +323,7 @@ class FerModel(object):
                    kernel_regularizer=regularizers.l2(self.weight_decay), name=name)(x)
         x = BatchNormalization()(x)
 
-        inputs = Conv2D(out_filters, 1, padding='same', kernel_initializer='uniform',
-                        kernel_regularizer=regularizers.l2(self.weight_decay), name=str(uuid.uuid4()))(inputs)
+        inputs = Conv2D(out_filters, 1, padding='same',kernel_initializer='uniform', kernel_regularizer=regularizers.l2(self.weight_decay),name=str(uuid.uuid4()))(inputs)
         inputs = BatchNormalization()(inputs)
 
         x = keras.layers.add([inputs, x])
@@ -332,30 +331,28 @@ class FerModel(object):
 
         return x
 
+
+
     def build_model(self):
         inputs = Input(shape=self.x_shape)
-
         x1 = Conv2D(64, 3, padding='same', activation="relu",
                                     # depthwise_regularizer=regularizers.l2(self.weight_decay),
                                     # pointwise_regularizer=regularizers.l2(self.weight_decay),
                     kernel_initializer='he_normal', name='conv2d_1_1')(inputs)
         x = MaxPooling2D()(x1)
         x = BatchNormalization()(x)
-        # x = Dropout(0.3)(x)
         x2 = SeparableConv2D(128, 5, padding='same', activation="relu",
                                     # depthwise_regularizer=regularizers.l2(self.weight_decay),
                                     # pointwise_regularizer=regularizers.l2(self.weight_decay),
                                     kernel_initializer='he_normal',name='conv2d_1_2')(x)
         x = MaxPooling2D()(x2)
         x = BatchNormalization()(x)
-        # x = Dropout(0.3)(x)
         x3 = SeparableConv2D(256,7, padding='same', activation="relu",
                                    # depthwise_regularizer=regularizers.l2(self.weight_decay),
                                    # pointwise_regularizer=regularizers.l2(self.weight_decay),
                                     kernel_initializer='he_normal', name='conv2d_1_3')(x)
         x = MaxPooling2D()(x3)
         x = BatchNormalization()(x)
-        # x = Dropout(0.3)(x)
         x4 = SeparableConv2D(512, 9, padding='same', activation="relu",
                                     # depthwise_regularizer=regularizers.l2(self.weight_decay),
                                     # pointwise_regularizer=regularizers.l2(self.weight_decay),
@@ -368,11 +365,11 @@ class FerModel(object):
         x5 = self.py_block(x, 32, 256,"conv2d_1_att2")
 
         # x3 = GlobalMaxPooling2D(name=str(uuid.uuid4()))(x3)
-        x11 = GlobalMaxPooling2D(name=str(uuid.uuid4()))(x5)
-        x12 = GlobalMaxPooling2D(name=str(uuid.uuid4()))(x4)
-        x13 = GlobalMaxPooling2D(name=str(uuid.uuid4()))(x8)
+        x5 = GlobalMaxPooling2D(name=str(uuid.uuid4()))(x5)
+        x4 = GlobalMaxPooling2D(name=str(uuid.uuid4()))(x4)
+        x3 = GlobalMaxPooling2D(name=str(uuid.uuid4()))(x8)
 
-        x = tf.keras.layers.concatenate([x11,x12,x13], name=str(uuid.uuid4()))
+        x = tf.keras.layers.concatenate([x4,x5,x3], name=str(uuid.uuid4()))
         x = BatchNormalization()(x)
         x = Dropout(0.2)(x)
         # x = Dense(128, activation='relu')(x)
@@ -382,40 +379,28 @@ class FerModel(object):
         return model_
 
     def train(self):
-        X_train = np.load('./driver_feature_kaggle/test/images.npy')
-        X_train = X_train.astype('float32')
-        X_train = X_train.reshape([-1, 224,224, 1])
+        X_train = np.load('./driver_feature_small_Sobel_driver100_rgb/test/images.npy')
+        X_train = X_train.reshape([-1, 224, 224, 1])
         X_train = X_train - np.mean(X_train, axis=0)
 
-        np.random.seed(2025)
+        np.random.seed(6666)
         np.random.shuffle(X_train)
 
-        y_train = np.load('./driver_feature_kaggle/test/labels.npy')
-        np.random.seed(2025)
+        y_train = np.load('./driver_feature_small_Sobel_driver100_rgb/test/labels.npy')
+        np.random.seed(6666)
         np.random.shuffle(y_train)
 
         X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+
         print(X_train.shape)
         print(y_train.shape)
         print(X_valid.shape)
         print(y_valid.shape)
 
-        #
-        # X_train = X_train[:15588]
-        # y_train = y_train[:15588]
-        #
-        # X_valid = X_valid[:2456]
-        # y_valid = y_valid[:2456]
-        # self.model.compile(optimizer=Adam(learning_rate=0.001),
-        #               loss='categorical_crossentropy',
-        #               metrics=['accuracy'])
-
-
         # self.model.compile(loss=loss.my_loss(0.0001),
         #                    optimizer=Adam(lr=0.001),
         #                    metrics=['acc', tf.keras.losses.categorical_crossentropy])
         # 创建Momentum优化器
-
         momentum_optimizer = tf.keras.optimizers.SGD(learning_rate=0.001, momentum=0.95)
 
 
@@ -431,6 +416,60 @@ class FerModel(object):
                                  validation_data=(X_valid, y_valid),
                                  callbacks=[self.call_backs]
                                  )
+        #靠谱方式
+        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\img'
+        img_list_all = os.listdir(data_path_abs)
+        for key, v in enumerate(img_list_all):
+            input_img1 = cv2.imread(data_path_abs + "/" + v)
+            input_img = cv2.cvtColor(input_img1, cv2.COLOR_BGR2GRAY)
+            image = cv2.resize(input_img, (224, 224))
+            blur = cv2.GaussianBlur(image, (3, 3), 0)  # 高斯滤波处理原图像降噪
+            x = cv2.Sobel(blur, cv2.CV_16S, 1, 0, ksize=3)  # Sobel函数求完导数后会有负值，还有会大于255的值
+            y = cv2.Sobel(blur, cv2.CV_16S, 0, 1, ksize=3)  # 使用16位有符号的数据类型，即cv2.CV_16S
+            Scale_absX = cv2.convertScaleAbs(x)  # 转回uint8
+            Scale_absY = cv2.convertScaleAbs(y)
+            sobel_image = cv2.addWeighted(Scale_absX, 0.5, Scale_absY, 0.5, 0)
+
+            sobel_image = np.expand_dims(sobel_image, axis=0)
+            predictions = self.model.predict(sobel_image)
+            # cv2.imshow('Segmentation', sobel_image)
+            # cv2.waitKey(1500)
+            # cv2.destroyAllWindows()
+
+        #     # 获取最后一层卷积层的输出
+            last_conv_layer = self.model.get_layer('conv2d_1_4')
+            grad_model = Model([self.model.inputs], [last_conv_layer.output, self.model.output])
+
+        #     # 计算类别的梯度
+            with tf.GradientTape() as tape:
+                conv_layer_output, preds = grad_model(sobel_image)
+                class_channel = preds[0][np.argmax(preds[0])]
+            # 计算梯度
+            grads = tape.gradient(class_channel, conv_layer_output)
+            # 计算权重
+            pooled_grads = tf.reduce_mean(grads, axis=(0, 1))
+            heatmap = tf.reduce_mean(tf.multiply(pooled_grads, conv_layer_output), axis=-1)
+
+            # feature_map_sum = sum(ele for ele in feature_map_combination)
+            heatmap = np.maximum(heatmap, 0)
+            heatmap /= np.max(heatmap)
+            # 重塑热力图并将其缩放到与原始图像相同的大小
+            heatmap = np.squeeze(heatmap)
+            gbkInput = cv2.imread(data_path_abs + "/" + v)
+            gbkInput = cv2.resize(gbkInput, (224, 224))
+
+            feature_map_sum = cv2.resize(heatmap, (gbkInput.shape[0], gbkInput.shape[1]))
+            # 将热力图转换为RGB格式
+            feature_map_sum = np.uint8(255 * feature_map_sum)
+            # 将热利用应用于原始图像
+            feature_map_sum = cv2.applyColorMap(feature_map_sum, cv2.COLORMAP_JET)
+            # 　这里的热力图因子是０.４
+            superimposed_img = feature_map_sum * 0.4 + gbkInput
+
+            cv2.imwrite( "person{}".format(v+".jpg"), superimposed_img)
+
+        print("Saved model to disk")
+
         yPred = []
         y = []
 
@@ -453,7 +492,7 @@ class FerModel(object):
             temp = []
             y.append(x_real)
 
-        with open("confidenceFile/kaggle_new.csv", "a", newline='') as f:
+        with open("confidenceFile/myDriver100.csv", "a", newline='') as f:
             writer = csv.writer(f)
             writer.writerow(["top_class_index", "top_class_probability", "x_real", "real_class_probability"])
             for r in conficent:
@@ -463,7 +502,7 @@ class FerModel(object):
         _val_f1 = f1_score(y, yPred, average='micro')
         _val_recall = recall_score(y, yPred, average='micro')
 
-        print("draw compliment" + str(_val_f1) + "*---" + str(_val_recall) + "*---" + str(precision))
+        print("draw compliment" + str(_val_f1) + "*---" + str(_val_recall)+"*---" + str(precision))
 
         data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\driver'
         img_list_all = os.listdir(data_path_abs)
@@ -482,7 +521,7 @@ class FerModel(object):
             heatmap = make_gradcam_heatmap(sobel_image, self.model, "conv2d_1_4", "guofang1")
             save_and_display_gradcam(data_path_abs + "/" + v, heatmap, v, "guanfang1")
 
-        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\driver'
+        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\fusion'
         img_list_all = os.listdir(data_path_abs)
         for key, v in enumerate(img_list_all):
             input_img1 = cv2.imread(data_path_abs + "/" + v)
@@ -499,7 +538,7 @@ class FerModel(object):
             heatmap = make_gradcam_heatmap(sobel_image, self.model, "conv2d_1_att2", "guanfang2")
             save_and_display_gradcam(data_path_abs + "/" + v, heatmap, v, "guanfang2")
 
-        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\driver'
+        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\fusion'
         img_list_all = os.listdir(data_path_abs)
         for key, v in enumerate(img_list_all):
             input_img1 = cv2.imread(data_path_abs + "/" + v)
@@ -538,7 +577,7 @@ class FerModel(object):
             superimposed_img = feature_map_sum * 0.4 + input_img1
             cv2.imwrite("person1_{}".format(v), superimposed_img)
 
-        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\driver'
+        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\fusion'
         img_list_all = os.listdir(data_path_abs)
         for key, v in enumerate(img_list_all):
             input_img1 = cv2.imread(data_path_abs + "/" + v)
@@ -576,7 +615,7 @@ class FerModel(object):
             cv2.imwrite("person2_{}".format(v), superimposed_img)
 
         # 靠谱方式
-        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\driver'
+        data_path_abs = 'C:\\Users\\Administrator\\Desktop\\DriverDetection\\fusion'
         img_list_all = os.listdir(data_path_abs)
         for key, v in enumerate(img_list_all):
             input_img1 = cv2.imread(data_path_abs + "/" + v)
@@ -775,8 +814,102 @@ def evaluate(model, X, Y):
     return accuracy[0]
 
 
+
+def get_row_col(num_pic):
+    squr = num_pic ** 0.5
+    row = round(squr)
+    col = row + 1 if squr - row > 0 else row
+    return row,col
+def visualize_feature_map(img_batch):
+    feature_map = np.squeeze(img_batch,axis=0)
+    # print(feature_map.shape)
+    feature_map_combination=[]
+    plt.figure()
+
+    num_pic = feature_map.shape[2]
+    row,col = get_row_col(num_pic)
+
+    for i in range(0,num_pic):
+        feature_map_split=feature_map[:,:,i]
+        # cv2.imwrite("feature_map_split.jpg",feature_map_split)
+        feature_map_combination.append(feature_map_split)
+        # plt.subplot(row,col,i+1)
+        # plt.imshow(feature_map_split)
+        # axis('off')
+        # title('feature_map_{}'.format(i))
+
+    # plt.savefig('feature_map.jpg')
+    # plt.show()
+    # 各个特征图按1：1 叠加
+    feature_map_sum = sum(ele for ele in feature_map_combination)
+    feature_map_sum = np.maximum(feature_map_sum, 0)
+    feature_map_sum /= np.max(feature_map_sum)
+
+    # print(feature_map_sum)
+
+
+    plt.imshow(feature_map_sum)
+    # plt.savefig("{}".format("feature_map_sum"+str(uuid.uuid4())+".eps"))
+    # plt.savefig("{}".format("feature_map_sum"+str(uuid.uuid4())+".jpg"))
+    return feature_map_sum
+
+
+    # cv2.imshow('Segmentation', feature_map_sum)
+    # cv2.waitKey(4000)
+    # cv2.destroyAllWindows()
+
+
+from tensorflow.keras.models import Model
+
+
+def grad_cam(model, img_array, layer_name, class_idx=None):
+    # 创建梯度计算模型
+    grad_model = Model(
+        inputs=model.inputs,
+        outputs=[model.get_layer(layer_name).output, model.output]
+    )
+
+    with tf.GradientTape() as tape:
+        conv_outputs, predictions = grad_model(img_array)
+        if class_idx is None:
+            class_idx = np.argmax(predictions)
+        loss = predictions[:, class_idx]
+
+    # 计算梯度
+    grads = tape.gradient(loss, conv_outputs)
+
+    # 计算权重（全局平均池化梯度）
+    weights = tf.reduce_mean(grads, axis=(0, 1))
+
+    # 生成热力图
+    cam = np.dot(conv_outputs, weights)
+    cam = np.maximum(cam, 0)  # ReLU
+    cam = cv2.resize(cam, (img_array.shape, img_array.shape))
+    cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)  # 归一化
+
+    return cam
+
+
+import sklearn
+import seaborn as sns
+def draw_confu(y, y_pred, name=''):
+    sns.set(font_scale=3)
+    confusion_matrix = sklearn.metrics.confusion_matrix(y, y_pred)
+    plt.xticks(fontsize=10)  # 设置x轴刻度字体大小为12
+    plt.yticks(fontsize=10)
+    plt.figure(figsize=(16, 14))
+    sns.heatmap(confusion_matrix, annot=True, fmt="d", annot_kws={"size": 20});
+    plt.title("Confusion matrix", fontsize=32)
+    plt.ylabel('Actual Label', fontsize=28)
+    plt.xlabel('Predicted Label', fontsize=28)
+    plt.savefig('./result_%s.eps' % (name))
+    plt.savefig('./result_%s.svg' % (name))
+    plt.savefig('./result_%s.jpg' % (name))
+
+
 if __name__ == '__main__':
     import tensorflow as tf
     # 启用兼容模式
     fer_model = FerModel()
     print(tf.test.is_gpu_available())
+

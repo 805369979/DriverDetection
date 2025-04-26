@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 
-file_path = 'C:\\Users\\Administrator\\Desktop\\实验数据结果\\分心\\sdf73\\plot.txt'
+# file_path = 'C:\\Users\\Administrator\\Desktop\\实验数据结果\\分心\\sdf73\\plot.txt'
+file_path = 'C:\\Users\\Administrator\\Desktop\\论文投稿\\返修才来哦\\kaggle\\99.87.txt'
+# file_path = 'C:\\Users\\Administrator\\Desktop\\论文投稿\\实验数据结果\\分心\\AUCD2_95.66\\plot.txt'
 file = open(file_path, 'r')
 accData = []
 accValData = []
@@ -38,7 +40,7 @@ file.close()
 x= range(1,201) #创建等差数列(0,2)分成100份
 plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']#设置字体为SimHei显示中文
 plt.plot(x,accData,label='train_accuracy')#（x,x平方）坐标画图
-plt.plot(x,accValData,label='test_accuracy')#（x,x三次方）坐标画图
+plt.plot(x,accValData,label='test_accuracy ( Best Acc=0.9987 )')#（x,x三次方）坐标画图
 plt.xlabel('epoch')#x坐标轴名
 plt.ylabel('accuracy')#y坐标轴名
 plt.title('Train and Test accuracy')

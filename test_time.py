@@ -22,7 +22,6 @@ from keras.applications import vgg16,mobilenet_v3,densenet,nasnet
 import tensorflow.keras.layers
 from tensorflow.python.keras.applications.densenet import DenseNet201
 
-import loss
 import cbam
 import numpy as np
 import uuid
@@ -333,28 +332,28 @@ class FerModel(object):
                     kernel_initializer='he_normal', name='conv2d_1_1')(inputs)
         x = MaxPooling2D()(x1)
         x = BatchNormalization()(x)
-        x = Dropout(0.3)(x)
+        # x = Dropout(0.3)(x)
         x2 = SeparableConv2D(128, 5, padding='same', activation="relu",
                                     # depthwise_regularizer=regularizers.l2(self.weight_decay),
                                     # pointwise_regularizer=regularizers.l2(self.weight_decay),
                                     kernel_initializer='he_normal',name='conv2d_1_2')(x)
         x = MaxPooling2D()(x2)
         x = BatchNormalization()(x)
-        x = Dropout(0.3)(x)
+        # x = Dropout(0.3)(x)
         x3 = SeparableConv2D(256,7, padding='same', activation="relu",
                                    # depthwise_regularizer=regularizers.l2(self.weight_decay),
                                    # pointwise_regularizer=regularizers.l2(self.weight_decay),
                                     kernel_initializer='he_normal', name='conv2d_1_3')(x)
         x = MaxPooling2D()(x3)
         x = BatchNormalization()(x)
-        x = Dropout(0.3)(x)
+        # x = Dropout(0.3)(x)
         x4 = SeparableConv2D(512, 9, padding='same', activation="relu",
                                     # depthwise_regularizer=regularizers.l2(self.weight_decay),
                                     # pointwise_regularizer=regularizers.l2(self.weight_decay),
                                     kernel_initializer='he_normal',name='conv2d_1_4')(x)
         x = MaxPooling2D()(x4)
         x = BatchNormalization()(x)
-        x = Dropout(0.3)(x)
+        # x = Dropout(0.3)(x)
         # x3 = self.danet(x)
         x8 = self.py_block(x3, 16, 64)
         x5 = self.py_block(x, 32, 256)
@@ -367,7 +366,7 @@ class FerModel(object):
         x = tf.keras.layers.concatenate([x11,x12,x13], name=str(uuid.uuid4()))
         x = BatchNormalization()(x)
         x = Dropout(0.2)(x)
-        x = Dense(128, activation='relu')(x)
+        # x = Dense(128, activation='relu')(x)
         outputs = Dense(self.classes, activation="softmax",kernel_initializer='he_normal', kernel_regularizer=regularizers.l2(self.weight_decay))(x)
         model_ = Model(inputs=inputs, outputs=outputs)
         # model_.summary()
@@ -375,13 +374,13 @@ class FerModel(object):
 
     def train(self):
         import numpy as np
-        x = tf.constant(np.random.randn(1, 224, 224, 3))
+        x = tf.constant(np.random.randn(32, 224, 224, 3))
         start = time.time()
-        for i in range(50):
+        for i in range(500):
             features = self.model.predict(x)
         end = time.time()-start
         print(end/i)
-        x = tf.constant(np.random.randn(1, 224, 224, 3))
+        x = tf.constant(np.random.randn(32, 224, 224, 3))
         print(get_flops(self.model, [x]))
 
 
@@ -439,43 +438,43 @@ def get_flops(model, model_inputs) -> float:
 if __name__ == '__main__':
 
     # 测试自己的模型时间
+    import tensorflow as tf
+    # # 使用gpu则开启这一行代码
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # # 使用cpu则开启这一行代码
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    print(tf.test.is_gpu_available())
+    fer_model = FerModel()
+    print(tf.test.is_gpu_available())
+
+    # 测试模型时间
     # import tensorflow as tf
     # # 使用gpu则开启这一行代码
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     # # 使用cpu则开启这一行代码
     # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     # print(tf.test.is_gpu_available())
-    # fer_model = FerModel()
-    # print(tf.test.is_gpu_available())
-
-    # 测试模型时间
-    import tensorflow as tf
-    # 使用gpu则开启这一行代码
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    # 使用cpu则开启这一行代码
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-    print(tf.test.is_gpu_available())
-    import numpy as np
-    # model = tensorflow.keras.applications.efficientnet.EfficientNetB7(input_shape=(224,224,3),weights=None,include_top=False)
-    base_model = DenseNet201(include_top=False, weights='imagenet', input_shape=(224, 224, 3))
+    # import numpy as np
+    # model = tensorflow.keras.applications.efficientnet.EfficientNetB7(input_shape=(224,224,3),weights=None)
+    # base_model = DenseNet201(include_top=False, weights='imagenet', input_shape=(224, 224, 3))
     # base_model = tensorflow.keras.applications.resnet.ResNet152(include_top=False, weights='imagenet',input_shape=(224, 224, 3))
     # base_model = tensorflow.keras.applications.resnet.ResNet50(include_top=False, weights='imagenet',input_shape=(224, 224, 3))
     # base_model = tensorflow.keras.applications.mobilenet.MobileNet(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
     # base_model = tensorflow.keras.applications.NASNetMobile(weights='imagenet', include_top=False,input_shape=(224, 224, 3))
-    base_model = tensorflow.keras.applications.Xception(weights='imagenet', include_top=False,input_shape=(224, 224, 3))
-    x = base_model.output
-    x = GlobalAveragePooling2D()(x)
-    predictions = Dense(10, activation='softmax')(x)
+    # base_model = tensorflow.keras.applications.Xception(weights='imagenet', include_top=False,input_shape=(224, 224, 3))
+    # x = base_model.output
+    # x = GlobalAveragePooling2D()(x)
+    # predictions = Dense(10, activation='softmax')(x)
     # print(base_model.summary())
-    model = Model(inputs=base_model.input, outputs=predictions)
-    x = tf.constant(np.random.randn(1, 224, 224, 3))
-    start = time.time()
+    # model = Model(inputs=base_model.input, outputs=predictions)
+    # x = tf.constant(np.random.randn(1, 224, 224, 3))
+    # start = time.time()
     # cpu 50 Gpu 500
-    for i in range(500):
-        features = model.predict(x)
-    end = time.time() - start
-    print(end / i)
-    x = tf.constant(np.random.randn(1, 224, 224, 3))
-    print(get_flops(model, [x]))
+    # for i in range(500):
+    #     features = model.predict(x)
+    # end = time.time() - start
+    # print(end / i)
+    # x = tf.constant(np.random.randn(1, 224, 224, 3))
+    # print(get_flops(model, [x]))
 
 

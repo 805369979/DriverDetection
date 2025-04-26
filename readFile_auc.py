@@ -12,10 +12,10 @@ GET_HOG_WINDOWS_FEATURES = True
 GET_HOG_FEATURES = True
 
 
-OUTPUT_FOLDER_NAME = "D:\\深度学习项目代码\\file\code\\firstCode\\driver_feature_small_Sobel"
-data_path = 'D:\\dataset\\auc.distracted.driver.dataset_v2\\v1_cam1_no_split\\'
+OUTPUT_FOLDER_NAME = "C:\\Users\\Administrator\\Desktop\\DriverDetection\\driver_feature_small_Sobel"
+data_path = 'D:\\dataset\\auc.distracted.driver.dataset_v2\\v1_cam1_no_split2\\'
 
-data_path_abs = 'D:\\dataset\\auc.distracted.driver.dataset_v2\\v1_cam1_no_split\\'
+data_path_abs = 'D:\\dataset\\auc.distracted.driver.dataset_v2\\v1_cam1_no_split2\\'
 
 
 original_labels = [0,1,2,3,4,5,6,7,8,9]
@@ -79,30 +79,30 @@ for path in ['Test_data_list.csv']:
                 input_img1 = cv2.imread(data_path + class_data + "\\" + name)
                 input_img = cv2.cvtColor(input_img1, cv2.COLOR_BGR2GRAY)
 
-                input_img = cv2.resize(input_img, (800, 800))
+                input_img = cv2.resize(input_img, (224, 224))
                 # input_img1 = cv2.resize(input_img1, (448, 448))
                 # print(get_new_label(key, one_hot_encoding=ONE_HOT_ENCODING))
                 labels_list_test.append(get_new_label(train_label[k], one_hot_encoding=ONE_HOT_ENCODING))
                 #
 
-                input_img = cv2.GaussianBlur(input_img, (3, 3), 0)  # 高斯滤波处理原图像降噪
+                input_img = cv2.GaussianBlur(input_img, (5, 5), 0)  # 高斯滤波处理原图像降噪
                 x = cv2.Sobel(input_img, cv2.CV_16S, 1, 0)  # Sobel函数求完导数后会有负值，还有会大于255的值
                 y = cv2.Sobel(input_img, cv2.CV_16S, 0, 1)  # 使用16位有符号的数据类型，即cv2.CV_16S
                 Scale_absX = cv2.convertScaleAbs(x)  # 转回uint8
                 Scale_absY = cv2.convertScaleAbs(y)
                 sobel_image = cv2.addWeighted(Scale_absX, 0.5, Scale_absY, 0.5, 0)
-                # img_data_list_test.append(sobel_image)
+                img_data_list_test.append(sobel_image)
                 # cv2.imshow('jijia_xy_Scharr_full', input_img1)
-                cv2.imshow('jijia_xy_Scharr_full', sobel_image)
+                # cv2.imshow('jijia_xy_Scharr_full', sobel_image)
                 # plt.imsave("demo1.jpg", input_img1)  # 将改变后的图像保存
                 # plt.imsave("demo1.eps", input_img1)  # 将改变后的图像保存
                 # plt.imsave("demo1.svg", input_img1)  # 将改变后的图像保存
 
-                plt.imsave("demo.png", sobel_image)
+                # plt.imsave("demo.png", sobel_image)
                 # plt.imsave("demo.svg", sobel_image)
                 # plt.imsave("demo.eps", sobel_image)
-                cv2.waitKey(3000)
-                cv2.destroyAllWindows()
+                # cv2.waitKey(3000)
+                # cv2.destroyAllWindows()
                 count+=1
                 break
     print(count)
@@ -121,12 +121,19 @@ for path in ['Test_data_list.csv']:
     print(len(img_data_list_test))
     print(len(labels_list_test))
     # print(len(hog_features_test))
-    # np.save(OUTPUT_FOLDER_NAME + '/' + save_n + '/images.npy', img_data_list_test)
-    #
-    # if ONE_HOT_ENCODING:
-    #     np.save(OUTPUT_FOLDER_NAME + '/' + save_n + '/labels.npy', labels_list_test)
-    # else:
-    #     np.save(OUTPUT_FOLDER_NAME + '/' + save_n + '/labels.npy', labels_list_test)
+
+    np.random.seed(2025)
+    np.random.shuffle(img_data_list_test)
+    np.random.seed(2025)
+    np.random.shuffle(labels_list_test)
+
+
+    np.save(OUTPUT_FOLDER_NAME + '/' + save_n + '/images.npy', img_data_list_test)
+
+    if ONE_HOT_ENCODING:
+        np.save(OUTPUT_FOLDER_NAME + '/' + save_n + '/labels.npy', labels_list_test)
+    else:
+        np.save(OUTPUT_FOLDER_NAME + '/' + save_n + '/labels.npy', labels_list_test)
     # np.save(OUTPUT_FOLDER_NAME + '/' + save_n + '/hog_features.npy', hog_features_test)
 
 
